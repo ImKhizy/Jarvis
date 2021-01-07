@@ -9,10 +9,16 @@ import urllib.request
 import urllib.parse
 import time
 import random
+import tempfile
+import subprocess
 
-engine = pyttsx3.init('sapi5')
-voices = engine.getProperty('voices')
-engine.setProperty('voice', voices[0].id)
+# engine = pyttsx3.init('sapi5')
+# voices = engine.getProperty('voices')
+# engine.setProperty('voice', voices[0].id)
+
+
+def speak(audio):
+    subprocess.call("espeak -v espeak -v en-gb '{0}' -s 170 -p 30 -a 40 -g 4".format(audio), shell=True)
 
 def setupfunc():
     global r
@@ -21,9 +27,6 @@ def setupfunc():
     with sr.Microphone() as source:
         r.adjust_for_ambient_noise(source, 2)
 
-def speak(audio):
-    engine.say(audio)
-    engine.runAndWait()
 
 def wishMe():
     speak('At your service sir')
@@ -46,23 +49,39 @@ def takeCommand():
 
 def checkwhichrun(command):
     if "photoshop" in command:
-        os.startfile('C:\\Program Files\\Adobe\\Adobe Photoshop CC 2017\\Photoshop.exe')
-        speak('bringing up Photoshop on screen')
-    elif "code" in command:
-        os.startfile('D:\\VSCode-win32-x64-1.47.0\\Code.exe')
-        speak('Opening V S Code Now')
+        os.system('krita')
+        speak('bringing up photo editing software on screen')
+    # elif "code" in command:
+    #     os.system('code')
+    #     speak('Opening V S Code Now')
     elif "firefox" in command:
-        os.startfile('"C:\\Program Files\\Mozilla Firefox\\firefox.exe"')
+        os.system('firefox')
         speak('Showing Mozilla Firefox on monitor')
     elif "word" in command:
-        os.startfile('C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Microsoft Office\\Microsoft Word.lnk')
-        speak('Launching Microsoft Word')
+        os.system('libreoffice --writer')
+        speak('Launching Word')
     elif "powerpoint" in command:
-        os.startfile('C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Microsoft Office\\Microsoft Powerpoint.lnk')
-        speak('Launching Microsoft Powerpoint')
+        os.system('libreoffice --impress')
+        speak('Launching Powerpoint')
     elif "excel" in command:
-        os.startfile('C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Microsoft Office\\Microsoft Excel.lnk')
-        speak('Launching Microsoft Excel')
+        os.system('libreoffice --calc')
+        speak('Launching Spreadsheet tool')
+    else:
+        command = command.lower()
+        command = command.replace(" ", "")
+        try:
+            with tempfile.TemporaryFile() as tempf:
+                proc = subprocess.Popen([command])
+                proc.wait()
+                tempf.seek(0)
+        except Exception as e:
+            if "No such file" in str(e):
+                print("Requested program not found")
+            else:
+                proc = subprocess.Popen([command])
+                proc.wait()
+                
+        
 
 
 def queryfix(query, EnableQueryFilter):
@@ -98,11 +117,12 @@ def logicalact(query):
                 query = query.replace(item, "")
                 webbrowser.open_new("https://www.google.com/search?q=" + query)
                 speak('Googling ' + query)
-        if 'play' in query:
+        if 'play' in query or 'youtube' in query:
              tempolist = query.split()
-             pind = tempolist.index("play")
-            #  except:
-            #     pind = tempolist.index("youtube")
+             try:
+                pind = tempolist.index("play")
+             except:
+                pind = tempolist.index("youtube")
             
              b = tempolist[pind:]
              query_string = urllib.parse.urlencode({"search_query=" : b})
@@ -112,9 +132,9 @@ def logicalact(query):
              webbrowser.open_new("http://www.youtube.com/watch?v={}".format(search_results[0]))
              speak('Playing ' + b)
 
-        elif "recipe" in query and "for" in query:
+        elif "recipe for" in query:
             tempolist = query.split()
-            commandpos = tempolist.index('recipe')
+            commandpos = tempolist.index('for')
             s = " "
             b = s.join(tempolist[commandpos:])
             webbrowser.open_new("https://www.youtube.com/results?search_query=" + b)
